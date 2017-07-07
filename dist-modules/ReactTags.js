@@ -1,5 +1,10 @@
 'use strict';
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.WithOutContext = exports.WithContext = exports.Keys = undefined;
+
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -12,6 +17,10 @@ var _reactDom = require('react-dom');
 
 var _reactDom2 = _interopRequireDefault(_reactDom);
 
+var _propTypes = require('prop-types');
+
+var _propTypes2 = _interopRequireDefault(_propTypes);
+
 var _reactDnd = require('react-dnd');
 
 var _reactDndHtml5Backend = require('react-dnd-html5-backend');
@@ -22,13 +31,17 @@ var _Suggestions = require('./Suggestions');
 
 var _Suggestions2 = _interopRequireDefault(_Suggestions);
 
-var _propTypes = require('prop-types');
-
-var _propTypes2 = _interopRequireDefault(_propTypes);
-
 var _Tag = require('./Tag');
 
 var _Tag2 = _interopRequireDefault(_Tag);
+
+var _AutoComplete = require('material-ui/AutoComplete');
+
+var _AutoComplete2 = _interopRequireDefault(_AutoComplete);
+
+var _Chip = require('material-ui/Chip');
+
+var _Chip2 = _interopRequireDefault(_Chip);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -39,7 +52,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 // Constants
-var Keys = {
+var Keys = exports.Keys = {
   ENTER: 13,
   TAB: 9,
   BACKSPACE: 8,
@@ -97,14 +110,11 @@ var ReactTags = function (_Component) {
   }, {
     key: 'resetAndFocusInput',
     value: function resetAndFocusInput() {
-      var _props = this.props,
-          autofocus = _props.autofocus,
-          readOnly = _props.readOnly;
-
-      if (autofocus && !readOnly) {
-        this.textInput.value = "";
-        this.textInput.focus();
-      }
+      // const { autofocus, readOnly } = this.props;
+      // if (autofocus && !readOnly) {
+      //   this.textInput.value = "";
+      //   this.textInput.focus();
+      // }
     }
   }, {
     key: 'componentDidMount',
@@ -118,8 +128,8 @@ var ReactTags = function (_Component) {
         return this.props.handleFilterSuggestions(query, suggestions);
       }
 
-      return suggestions.filter(function (item) {
-        return item.toLowerCase().indexOf(query.toLowerCase()) === 0;
+      return suggestions.filter(function (key) {
+        return _AutoComplete2.default.fuzzyFilter(query, key);
       });
     }
   }, {
@@ -127,7 +137,7 @@ var ReactTags = function (_Component) {
     value: function componentWillReceiveProps(props) {
       var suggestions = this.filteredSuggestions(this.state.query, props.suggestions);
       this.setState({
-        suggestions: suggestions,
+        suggestions: props.suggestions,
         classNames: _extends({}, DefaultClassNames, props.classNames)
       });
     }
@@ -140,12 +150,11 @@ var ReactTags = function (_Component) {
     }
   }, {
     key: 'handleChange',
-    value: function handleChange(e) {
+    value: function handleChange(query) {
       if (this.props.handleInputChange) {
-        this.props.handleInputChange(e.target.value.trim());
+        this.props.handleInputChange(query);
       }
 
-      var query = e.target.value.trim();
       var suggestions = this.filteredSuggestions(query, this.props.suggestions);
 
       var selectedIndex = this.state.selectedIndex;
@@ -154,9 +163,7 @@ var ReactTags = function (_Component) {
       }
 
       this.setState({
-        query: query,
-        suggestions: suggestions,
-        selectedIndex: selectedIndex
+        query: query
       });
     }
   }, {
@@ -165,7 +172,7 @@ var ReactTags = function (_Component) {
       var value = e.target.value.trim();
       if (this.props.handleInputBlur) {
         this.props.handleInputBlur(value);
-        this.textInput.value = "";
+        // this.textInput.value = "";
       }
     }
   }, {
@@ -183,8 +190,7 @@ var ReactTags = function (_Component) {
         e.stopPropagation();
         this.setState({
           selectedIndex: -1,
-          selectionMode: false,
-          suggestions: []
+          selectionMode: false
         });
       }
 
@@ -200,6 +206,7 @@ var ReactTags = function (_Component) {
           if (this.state.selectionMode && this.state.selectedIndex != -1) {
             query = this.state.suggestions[this.state.selectedIndex];
           }
+
           this.addTag(query);
         }
       }
@@ -264,12 +271,18 @@ var ReactTags = function (_Component) {
   }, {
     key: 'addTag',
     value: function addTag(tag) {
+      var selectedIndex = this.state.selectedIndex;
+      var possibleMatches = this.filteredSuggestions(tag, this.props.suggestions);
+
       if (this.props.autocomplete) {
-        var possibleMatches = this.filteredSuggestions(tag, this.props.suggestions);
 
         if (this.props.autocomplete === 1 && possibleMatches.length === 1 || this.props.autocomplete === true && possibleMatches.length) {
           tag = possibleMatches[0];
         }
+      }
+
+      if (!this.props.allowCreate && selectedIndex === -1 && !possibleMatches.length) {
+        return;
       }
 
       // call method to add
@@ -299,23 +312,14 @@ var ReactTags = function (_Component) {
     }
   }, {
     key: 'moveTag',
-    value: function moveTag(id, afterId) {
+    value: function moveTag(dragIndex, hoverIndex) {
       var tags = this.props.tags;
 
       // locate tags
-      var tag = tags.filter(function (t) {
-        return t.id === id;
-      })[0];
-      var afterTag = tags.filter(function (t) {
-        return t.id === afterId;
-      })[0];
-
-      // find their position in the array
-      var tagIndex = tags.indexOf(tag);
-      var afterTagIndex = tags.indexOf(afterTag);
+      var dragTag = tags[dragIndex];
 
       // call handler with current position and after position
-      this.props.handleDrag(tag, tagIndex, afterTagIndex);
+      this.props.handleDrag(dragTag, dragIndex, hoverIndex);
     }
   }, {
     key: 'render',
@@ -325,7 +329,8 @@ var ReactTags = function (_Component) {
       var moveTag = this.props.handleDrag ? this.moveTag : null;
 
       var tagItems = this.props.tags.map(function (tag, i) {
-        return _react2.default.createElement(_Tag2.default, { key: i,
+        return _react2.default.createElement(_Tag2.default, { key: tag.id,
+          index: i,
           tag: tag,
           labelField: this.props.labelField,
           onDelete: this.handleDelete.bind(this, i),
@@ -347,29 +352,22 @@ var ReactTags = function (_Component) {
       var tagInput = !this.props.readOnly ? _react2.default.createElement(
         'div',
         { className: this.state.classNames.tagInput },
-        _react2.default.createElement('input', {
-          ref: function ref(input) {
-            _this3.textInput = input;
+        _react2.default.createElement(_AutoComplete2.default, {
+          floatingLabelText: placeholder,
+          filter: _AutoComplete2.default.fuzzyFilter,
+          openOnFocus: true,
+          dataSource: suggestions,
+          dataSourceConfig: { text: this.props.labelField, value: 'id' },
+          onNewRequest: function onNewRequest(t, i) {
+            return i < 0 ? _this3.handleKeyDown({
+              keyCode: Keys.ENTER,
+              preventDefault: function preventDefault() {}
+            }) : _this3.handleSuggestionClick(i);
           },
-          className: this.state.classNames.tagInputField,
-          type: 'text',
-          placeholder: placeholder,
-          'aria-label': placeholder,
-          onBlur: this.handleBlur,
-          onChange: this.handleChange,
-          onKeyDown: this.handleKeyDown,
-          onPaste: this.handlePaste,
-          name: inputName,
-          id: inputId,
-          maxLength: maxLength }),
-        _react2.default.createElement(_Suggestions2.default, { query: query,
-          suggestions: suggestions,
-          selectedIndex: selectedIndex,
-          handleClick: this.handleSuggestionClick,
-          handleHover: this.handleSuggestionHover,
-          minQueryLength: this.props.minQueryLength,
-          shouldRenderSuggestions: this.props.shouldRenderSuggestions,
-          classNames: this.state.classNames })
+          onUpdateInput: this.handleChange,
+          maxSearchResults: 10,
+          fullWidth: true,
+          searchText: query })
       ) : null;
 
       return _react2.default.createElement(
@@ -378,7 +376,11 @@ var ReactTags = function (_Component) {
         _react2.default.createElement(
           'div',
           { className: this.state.classNames.selected },
-          tagItems,
+          _react2.default.createElement(
+            'div',
+            { style: { display: 'flex', flexWrap: 'wrap' } },
+            tagItems
+          ),
           this.props.inline && tagInput
         ),
         !this.props.inline && tagInput
@@ -403,6 +405,7 @@ ReactTags.PropTypes = {
   handleDrag: _propTypes2.default.func,
   handleFilterSuggestions: _propTypes2.default.func,
   allowDeleteFromEmptyInput: _propTypes2.default.bool,
+  allowCreate: _propTypes2.default.bool,
   handleInputChange: _propTypes2.default.func,
   handleInputBlur: _propTypes2.default.func,
   minQueryLength: _propTypes2.default.number,
@@ -424,13 +427,11 @@ ReactTags.defaultProps = {
   autofocus: true,
   inline: true,
   allowDeleteFromEmptyInput: true,
+  allowCreate: true,
   minQueryLength: 2,
   autocomplete: false,
   readOnly: false
 };
 
-module.exports = {
-  WithContext: (0, _reactDnd.DragDropContext)(_reactDndHtml5Backend2.default)(ReactTags),
-  WithOutContext: ReactTags,
-  Keys: Keys
-};
+var WithContext = exports.WithContext = (0, _reactDnd.DragDropContext)(_reactDndHtml5Backend2.default)(ReactTags);
+var WithOutContext = exports.WithOutContext = ReactTags;

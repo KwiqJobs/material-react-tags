@@ -4,19 +4,27 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
-var _reactDnd = require('react-dnd');
+var _reactDom = require('react-dom');
 
 var _propTypes = require('prop-types');
 
 var _propTypes2 = _interopRequireDefault(_propTypes);
 
+var _reactDnd = require('react-dnd');
+
 var _flow = require('lodash/flow');
 
 var _flow2 = _interopRequireDefault(_flow);
+
+var _Chip = require('material-ui/Chip');
+
+var _Chip2 = _interopRequireDefault(_Chip);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -30,7 +38,7 @@ var ItemTypes = { TAG: 'tag' };
 
 var tagSource = {
   beginDrag: function beginDrag(props) {
-    return { id: props.tag.id };
+    return { id: props.tag.id, index: props.index };
   },
   canDrag: function canDrag(props) {
     return props.moveTag && !props.readOnly;
@@ -38,11 +46,47 @@ var tagSource = {
 };
 
 var tagTarget = {
-  hover: function hover(props, monitor) {
-    var draggedId = monitor.getItem().id;
-    if (draggedId !== props.id) {
-      props.moveTag(draggedId, props.tag.id);
+  hover: function hover(props, monitor, component) {
+    var dragIndex = monitor.getItem().index;
+    var hoverIndex = props.index;
+
+    // Don't replace items with themselves
+    if (dragIndex === hoverIndex) {
+      return;
     }
+
+    // Determine rectangle on screen
+    var hoverBoundingRect = (0, _reactDom.findDOMNode)(component).getBoundingClientRect();
+
+    // Get horizontal middle
+    var hoverMiddleX = (hoverBoundingRect.right - hoverBoundingRect.left) / 2;
+
+    // Determine mouse position
+    var clientOffset = monitor.getClientOffset();
+
+    // Get pixels to the left side
+    var hoverClientX = clientOffset.x - hoverBoundingRect.left;
+
+    // Only perform the move when the mouse has crossed half of the items width
+
+    // Dragging to the right
+    if (dragIndex < hoverIndex && hoverClientX < hoverMiddleX) {
+      return;
+    }
+
+    // Dragging to the left
+    if (dragIndex > hoverIndex && hoverClientX > hoverMiddleX) {
+      return;
+    }
+
+    // Time to actually perform the action
+    props.moveTag(dragIndex, hoverIndex);
+
+    // Note: we're mutating the monitor item here!
+    // Generally it's better to avoid mutations,
+    // but it's good here for the sake of performance
+    // to avoid expensive index searches.
+    monitor.getItem().index = hoverIndex;
   },
   canDrop: function canDrop(props) {
     return !props.readOnly;
@@ -60,6 +104,11 @@ var dropCollect = function dropCollect(connect, monitor) {
   return {
     connectDropTarget: connect.dropTarget()
   };
+};
+
+var style = {
+  margin: 4,
+  cursor: 'move'
 };
 
 function RemoveComponent(props) {
@@ -101,19 +150,23 @@ var Tag = function (_Component2) {
       var connectDragSource = props.connectDragSource,
           isDragging = props.isDragging,
           connectDropTarget = props.connectDropTarget,
-          readOnly = props.readOnly,
-          CustomRemoveComponent = props.CustomRemoveComponent;
+          readOnly = props.readOnly;
 
 
       var tagComponent = _react2.default.createElement(
-        'span',
-        { style: { opacity: isDragging ? 0 : 1 }, className: props.classNames.tag },
-        label,
-        _react2.default.createElement(RemoveComponent, {
-          className: props.classNames.remove,
-          removeComponent: props.removeComponent,
-          onClick: props.onDelete,
-          readOnly: props.readOnly })
+        'div',
+        null,
+        _react2.default.createElement(
+          _Chip2.default,
+          {
+            onRequestDelete: function onRequestDelete() {
+              console.log("hi");
+              props.onDelete();
+            },
+            style: _extends({ opacity: isDragging ? 0 : 1 }, style),
+            className: props.classNames.tag },
+          label
+        )
       );
       return connectDragSource(connectDropTarget(tagComponent));
     }, _temp), _possibleConstructorReturn(_this, _ret);
