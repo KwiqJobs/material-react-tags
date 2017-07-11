@@ -1,6 +1,6 @@
 {
   "name": "material-react-tag-input",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "A fork of react-tag-input which uses material-ui components",
   "main": "dist-modules/ReactTags.js",
   "scripts": {
