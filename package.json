@@ -1,6 +1,6 @@
 {
   "name": "material-react-tag-input",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "A fork of react-tag-input which uses material-ui components",
   "main": "dist-modules/ReactTags.js",
   "scripts": {
@@ -25,7 +25,7 @@
   "dependencies": {
     "lodash": "^4.14.1",
     "prop-types": "^15.5.8",
-    "material-ui": "^0.17.4",
+    "material-ui": "^0.19.1",
     "react-dnd": "^2.0.2",
     "react-dnd-html5-backend": "^2.0.0",
     "react-tap-event-plugin": "^2.0.1"
